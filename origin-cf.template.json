@@ -1,0 +1,137 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Michael Origin",
+  "Parameters": {
+    "AvailabilityZones": {
+      "Description": "List of AZs to deploy to.",
+      "Type": "CommaDelimitedList",
+      "Default": "us-east-1b,us-east-1c,us-east-1d,us-east-1e"
+    },
+    "InstanceType": {
+      "Description": "Server EC2 instance type",
+      "Type": "String",
+      "Default": "t1.micro",
+      "ConstraintDescription": "must be a valid EC2 instance type."
+    },
+    "SpotPrice": {
+      "Type": "Number",
+      "Default": "0.045",
+      "MinValue": "0"
+    },
+    "AllowedLocation": {
+      "Description": "The IP address range that can be used to access to the EC2 instance",
+      "Type": "String",
+      "MinLength": "9",
+      "MaxLength": "18",
+      "Default": "0.0.0.0/0",
+      "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+      "ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x."
+    }
+  },
+
+  "Resources": {
+
+
+   "OriginElasticIp" : {
+     "Type" : "AWS::EC2::EIP",
+     "Properties" : {
+       "Domain" : "vpc"
+      }
+    },
+
+    "OriginInstanceRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [{
+            "Effect": "Allow",
+            "Principal": { "Service": [ "ec2.amazonaws.com" ] },
+            "Action": "sts:AssumeRole"
+          }]
+        },
+        "Path": "/"
+      }
+    },
+
+    "OriginInstanceRolePolicies": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyName": "OriginInstanceRole",
+        "PolicyDocument": {
+          "Statement": [{
+            "Effect": "Allow",
+            "Action": [
+              "s3:Get*",
+              "s3:List*"
+            ],
+            "Resource": [
+              "arn:aws:s3:::michael-credentials/*",
+              "arn:aws:s3:::michael-init/*"
+            ]
+          },
+          {
+            "Effect": "Allow",
+            "Action": [
+              "ec2:AssociateAddress"
+            ],
+            "Resource": [
+              "*"
+            ]
+          }]
+        },
+        "Roles": [ { "Ref": "OriginInstanceRole" } ]
+      }
+    },
+
+    "OriginInstanceProfile": {
+      "Type": "AWS::IAM::InstanceProfile",
+      "Properties": {
+        "Path": "/",
+        "Roles": [ { "Ref": "OriginInstanceRole" } ]
+      }
+    },
+
+    "AutoScalingGroup": {
+        "Type": "AWS::AutoScaling::AutoScalingGroup",
+        "Properties": {
+            "AvailabilityZones": { "Ref": "AvailabilityZones" },
+            "LaunchConfigurationName": { "Ref": "LaunchConfig" },
+            "MinSize": 1,
+            "MaxSize": 1,
+            "DesiredCapacity": 1,
+            "VPCZoneIdentifier": [ "subnet-7cadb254", "subnet-930a68ae", "subnet-55e66523", "subnet-4fe13b17" ],
+            "Tags": [ {
+              "Key": "Name",
+              "Value": { "Ref": "AWS::StackName" },
+              "PropagateAtLaunch": "true"
+            } ]
+        }
+    },
+
+    "LaunchConfig": {
+        "Type": "AWS::AutoScaling::LaunchConfiguration",
+        "Properties": {
+            "SpotPrice": { "Ref": "SpotPrice" },
+            "ImageId": "ami-d4f7ddbe",
+            "SecurityGroups": [ "sg-3929015c" ],
+            "InstanceType": { "Ref": "InstanceType" },
+            "InstanceMonitoring": false,
+            "IamInstanceProfile": { "Ref": "OriginInstanceProfile" },
+            "AssociatePublicIpAddress": true,
+            "UserData": {
+                "Fn::Base64": {
+                    "Fn::Join": [ "", [ "#!/bin/bash\n",
+                                        "export EIP_ID=", { "Fn::GetAtt" : [ "OriginElasticIp", "AllocationId" ] },"\n",
+                                        "aws s3 cp s3://michael-init/base.sh .\n",
+                                        "bash base.sh s3://michael-init origin \n"
+                        ]
+                    ]
+                }
+            }
+
+        }
+    }
+
+  }
+}
+

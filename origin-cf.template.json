@@ -10,7 +10,7 @@
     "InstanceType": {
       "Description": "Server EC2 instance type",
       "Type": "String",
-      "Default": "t1.micro",
+      "Default": "m3.medium",
       "ConstraintDescription": "must be a valid EC2 instance type."
     },
     "SpotPrice": {
@@ -61,12 +61,23 @@
           "Statement": [{
             "Effect": "Allow",
             "Action": [
-              "s3:Get*",
-              "s3:List*"
+              "s3:*"
             ],
             "Resource": [
               "arn:aws:s3:::michael-credentials/*",
-              "arn:aws:s3:::michael-init/*"
+              "arn:aws:s3:::michael-init/*",
+              "arn:aws:s3:::michael-public/*",
+              "arn:aws:s3:::michael-store/*"
+            ]
+          },
+          {
+            "Effect": "Allow",
+            "Action": [
+              "s3:ListBucket",
+              "s3:GetBucketLocation"
+            ],
+            "Resource": [
+              "arn:aws:s3:::michael-store"
             ]
           },
           {
@@ -112,7 +123,7 @@
         "Type": "AWS::AutoScaling::LaunchConfiguration",
         "Properties": {
             "SpotPrice": { "Ref": "SpotPrice" },
-            "ImageId": "ami-d4f7ddbe",
+            "ImageId": "ami-a4827dc9",
             "SecurityGroups": [ "sg-3929015c" ],
             "InstanceType": { "Ref": "InstanceType" },
             "InstanceMonitoring": false,

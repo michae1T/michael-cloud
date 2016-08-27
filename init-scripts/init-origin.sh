@@ -13,7 +13,7 @@ CREDS_URI=s3://michael-credentials
 CREDS_PATH=/etc/creds
 
 mkdir -p $CREDS_PATH/ppp $CREDS_PATH/openvpn-main $CREDS_PATH/openvpn-tor
-mkdir -p /etc/s3fs /etc/owncloud
+mkdir -p /etc/s3fs /etc/owncloud /etc/nginx_overrides
 
 sync_openvpn() {
   aws s3 cp $CREDS_URI/openvpn-$1/server.key $CREDS_PATH/openvpn-$1
@@ -27,8 +27,13 @@ sync_openvpn main
 sync_openvpn tor
 aws s3 cp $CREDS_URI/s3fs/iam_role /etc/s3fs
 aws s3 cp $CREDS_URI/s3fs/bucket /etc/s3fs
+
 aws s3 cp $CREDS_URI/owncloud/config.php /etc/owncloud
 aws s3 cp $CREDS_URI/owncloud/ca-bundle.crt /etc/owncloud
+aws s3 cp $CREDS_URI/owncloud/nginx.conf /etc/nginx_overrides
+aws s3 cp $CREDS_URI/owncloud/server.crt /etc/nginx_overrides
+aws s3 cp $CREDS_URI/owncloud/server.key /etc/nginx_overrides
+
 
 wget 'https://raw.githubusercontent.com/michae1T/openvpn-tor-gateway/master/bin/otor-gateway.sh'
 mkdir -p /opt/bin
@@ -61,6 +66,7 @@ docker run $BASE_PARAMS --name pptp-1723 \
 docker run $BASE_PARAMS --name owncloud \
            -v /mnt/data:/mnt/data:shared \
            -v /etc/owncloud:/etc/owncloud \
-           -p 80:80/tcp \
+           -v /etc/nginx_overrides:/etc/nginx_overrides \
+           -p 80:80/tcp -p 443:443/tcp \
            michae1t/owncloud
 

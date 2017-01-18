@@ -12,10 +12,6 @@ chmod 700 $UHOME/.ssh
 chown 600 $UHOME/.ssh/authorized_keys
 chown -R $UUSER:$UUSER $UHOME/.ssh
 
-mkdir /mnt/data
-mount --bind /mnt/data /mnt/data
-mount --make-shared /mnt/data
-
 yum -y update
 yum -y install docker fuse
 

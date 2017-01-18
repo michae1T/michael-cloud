@@ -74,10 +74,12 @@
             "Effect": "Allow",
             "Action": [
               "s3:ListBucket",
+              "s3:ListObjects",
               "s3:GetBucketLocation"
             ],
             "Resource": [
-              "arn:aws:s3:::michael-store"
+              "arn:aws:s3:::michael-store",
+              "arn:aws:s3:::michael-credentials"
             ]
           },
           {
@@ -123,7 +125,7 @@
         "Type": "AWS::AutoScaling::LaunchConfiguration",
         "Properties": {
             "SpotPrice": { "Ref": "SpotPrice" },
-            "ImageId": "ami-a4827dc9",
+            "ImageId": "ami-9be6f38c",
             "SecurityGroups": [ "sg-3929015c" ],
             "InstanceType": { "Ref": "InstanceType" },
             "InstanceMonitoring": false,

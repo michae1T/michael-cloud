@@ -1,12 +1,18 @@
 .PHONY: create-stack update-stack create-rds-stack update-rds-stack upload-scripts
 
-CLOUDFORMATION_ARGS = --stack-name michael-origin --capabilities CAPABILITY_IAM --template-body file://origin-cf.template.json
+ORIGIN_TEMPLATE = origin-cf.template.temp.json
+CLOUDFORMATION_ARGS = --stack-name michael-origin --capabilities CAPABILITY_IAM --template-body file://$(ORIGIN_TEMPLATE)
 
-create-stack:
+create-origin-template:
+	./build-template.sh origin-cf ~/etc/private/contents/cloud/origin-params.json
+
+create-stack: create-origin-template
 	aws cloudformation create-stack $(CLOUDFORMATION_ARGS)
+	rm $(ORIGIN_TEMPLATE)
 
-update-stack:
+update-stack: create-origin-template
 	aws cloudformation update-stack $(CLOUDFORMATION_ARGS)
+	rm $(ORIGIN_TEMPLATE)
 
 RDS_TEMPLATE = rds-cf.template.temp.json
 CLOUDFORMATION_RDS_ARGS = --stack-name rds-1 --capabilities CAPABILITY_IAM --template-body file://$(RDS_TEMPLATE)
